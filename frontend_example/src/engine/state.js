@@ -1,0 +1,21 @@
+export const gameState = {
+  running: false,
+  paused: false,
+  score: 0,
+  health: 3,
+  timeLeft: 30,
+  objects: [],
+  bullets: [],
+  keys: {},
+  animationId: null,
+  spawnTimer: null,
+  countdownTimer: null,
+  currentSpec: null,
+  result: null,
+  defeatedCount: 0,
+  player: null,
+  canvas: null,
+  ctx: null,
+  lastShotAt: 0,
+  status: "未开始"
+};

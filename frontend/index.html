@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一句话生成小游戏</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar">
+        <div>
+          <h1>一句话生成小游戏</h1>
+          <p>输入一句话，让 AI 自动生成属于你的小游戏</p>
+        </div>
+        <div class="status-pill" id="statusText">未开始</div>
+      </section>
+
+      <section class="workspace">
+        <aside class="control-panel">
+          <label class="input-label" for="promptInput">游戏创意</label>
+          <textarea id="promptInput" rows="4" placeholder="例如：小猫在太空中躲避陨石收集星星"></textarea>
+          <button class="primary-button" id="generateBtn">AI 生成游戏</button>
+
+          <div class="examples" id="examples"></div>
+
+          <div class="spec-panel">
+            <h2>当前配置</h2>
+            <dl id="specView">
+              <dt>状态</dt>
+              <dd>等待生成</dd>
+            </dl>
+          </div>
+        </aside>
+
+        <section class="game-panel">
+          <div class="stage-wrap">
+            <canvas id="gameCanvas" width="800" height="450" tabindex="0" aria-label="游戏画布"></canvas>
+            <iframe id="moduleFrame" title="专业游戏模块" scrolling="no"></iframe>
+            <div class="overlay hidden" id="gameOverlay">
+              <strong id="overlayTitle">未开始</strong>
+              <span id="overlayMessage">生成一个小游戏后即可开始。</span>
+              <button id="overlayRestartBtn">重新开始</button>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="startBtn">开始</button>
+            <button id="pauseBtn">暂停</button>
+            <button id="restartBtn">重新开始</button>
+            <button id="fullscreenBtn">全屏</button>
+          </div>
+          <div class="key-help" id="keyHelp">
+            生成游戏后会显示操作说明。
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

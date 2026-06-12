@@ -1,0 +1,14 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+section:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+}
+
+section:fullscreen [aria-label="游戏画布"],
+section:fullscreen iframe {
+  object-fit: contain;
+}
