@@ -100,3 +100,7 @@ score | damage | win | none
 - 设计一个五子棋游戏
 - 俄罗斯方块
 - 做一个塔防游戏
+
+## Demo 开发提示词
+
+如果想让别人照着本项目开发一个类似 demo，可以直接使用 [DEMO_PROMPTS.md](./DEMO_PROMPTS.md) 中按阶段整理好的提示词。

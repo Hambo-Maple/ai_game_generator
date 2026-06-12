@@ -32,10 +32,10 @@ type GenerationMode = "spec" | "module" | "apiDevelopment";
 type GameSpec = {
   title?: string;
   description?: string;
-  player?: { emoji?: string; name?: string; control?: string };
+  player?: { emoji?: string; name?: string; control?: string; health?: number };
   scene?: { theme?: string };
-  objects?: Array<{ name?: string }>;
-  rules?: { winCondition?: string; loseCondition?: string };
+  objects?: Array<{ name?: string; points?: number; damage?: number }>;
+  rules?: { timeLimit?: number; scoreTarget?: number; winCondition?: string; loseCondition?: string };
   difficulty?: { name?: string };
 };
 
@@ -100,9 +100,18 @@ export default function App() {
       ["标题", spec.title || "-"],
       ["说明", spec.description || "-"],
       ["角色", `${spec.player?.emoji || ""} ${spec.player?.name || ""}`.trim() || "-"],
+      ["血量", spec.player?.health ? `${spec.player.health}` : "-"],
       ["场景", spec.scene?.theme || "-"],
       ["操作", spec.player?.control || "-"],
-      ["物体", spec.objects?.map((item) => item.name).filter(Boolean).join("、") || "-"],
+      ["物体", spec.objects?.map((item) => {
+        const detail = [
+          item.points !== undefined ? `${item.points}分` : "",
+          item.damage ? `伤害${item.damage}` : ""
+        ].filter(Boolean).join("/");
+        return `${item.name || "物体"}${detail ? `(${detail})` : ""}`;
+      }).join("、") || "-"],
+      ["限时", spec.rules?.timeLimit ? `${spec.rules.timeLimit} 秒` : "-"],
+      ["目标", spec.rules?.scoreTarget ? `${spec.rules.scoreTarget} 分` : "-"],
       ["胜利", spec.rules?.winCondition || "-"],
       ["失败", spec.rules?.loseCondition || "-"],
       ["难度", spec.difficulty?.name || "-"],
@@ -208,10 +217,18 @@ export default function App() {
   }
 
   async function pollDevelopmentTask(taskId: string) {
-    for (let attempt = 0; attempt < 40; attempt += 1) {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, 1500));
-      const response = await fetch(`/api/develop-game/${taskId}`);
-      const data = await response.json();
+      let data;
+      try {
+        const response = await fetch(`/api/develop-game/${taskId}`);
+        data = await response.json();
+      } catch {
+        setStatus("失败");
+        setOverlay({ visible: true, title: "开发状态获取失败", message: "无法连接后端，请确认服务正在运行。", restart: false });
+        return;
+      }
+
       const progress = Math.max(0, Math.min(100, Math.round(data.progress || Math.min(92, 8 + attempt * 2))));
       setOverlay({ visible: true, title: "正在调用 API 开发", message: `${data.stage || data.message || "正在开发"}：${progress}%`, restart: false });
 
@@ -224,17 +241,40 @@ export default function App() {
       }
 
       if (data.status === "failed") {
-        const fallback = data.fallbackSpec;
-        gameState.currentSpec = fallback;
-        setSpec(fallback);
-        setMode("spec");
-        setExternalGame(emptyExternal);
-        setStatus("已生成");
-        setKeyHelp(controlHelp(fallback?.player?.control));
-        setOverlay({ visible: true, title: "API 开发失败", message: data.message || "已为你加载默认小游戏。", restart: false });
+        loadFallbackAfterDevelopment(data.fallbackSpec, data.message || "已为你加载默认小游戏。");
         return;
       }
     }
+    loadFallbackAfterDevelopment(null, "API 开发等待超时，已为你加载默认小游戏。");
+  }
+
+  async function loadFallbackAfterDevelopment(fallbackSpec: GameSpec | null, message: string) {
+    let fallback = fallbackSpec;
+    if (!fallback) {
+      try {
+        const response = await fetch("/api/generate-game-spec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: "默认冒险小游戏" }),
+        });
+        const data = await response.json();
+        fallback = data.gameSpec || data.fallbackSpec;
+      } catch {
+        fallback = null;
+      }
+    }
+    if (fallback) {
+      gameState.currentSpec = fallback;
+      setSpec(fallback);
+      setMode("spec");
+      setExternalGame(emptyExternal);
+      setStatus("已生成");
+      setKeyHelp(controlHelp(fallback?.player?.control));
+      setOverlay({ visible: true, title: "API 开发未完成", message, restart: false });
+      return;
+    }
+    setStatus("失败");
+    setOverlay({ visible: true, title: "API 开发未完成", message, restart: false });
   }
 
   function showModule(entry: string, generated: boolean, controlsText = "") {

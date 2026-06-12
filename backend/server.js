@@ -25,6 +25,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.static(frontendRoot));
+app.use("/assets", express.static(path.join(legacyFrontendRoot, "assets")));
 app.use("/modules", express.static(path.join(legacyFrontendRoot, "modules")));
 app.use("/generated", express.static(path.join(legacyFrontendRoot, "generated")));
 

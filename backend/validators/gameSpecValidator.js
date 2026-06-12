@@ -106,24 +106,24 @@ function normalizeObjectsForControl(control, objects) {
 }
 
 function normalizeRulesForControl(control, rules, fallback) {
+  const fallbackWinCondition = control === "jump" ? "surviveTime" : "scoreTarget";
+  const fallbackLoseCondition = control === "click" ? "timeOut" : "healthZero";
   const normalized = {
     timeLimit: numberInRange(rules.timeLimit, fallback.rules.timeLimit, 10, 120),
     scoreTarget: numberInRange(rules.scoreTarget, fallback.rules.scoreTarget, 10, 500),
-    winCondition: pick(rules.winCondition, ALLOWED.winConditions, fallback.rules.winCondition),
-    loseCondition: pick(rules.loseCondition, ALLOWED.loseConditions, fallback.rules.loseCondition)
+    winCondition: pick(rules.winCondition, ALLOWED.winConditions, fallbackWinCondition),
+    loseCondition: pick(rules.loseCondition, ALLOWED.loseConditions, fallbackLoseCondition)
   };
 
-  if (control === "click") {
+  if (control === "click" && normalized.winCondition !== "scoreTarget" && normalized.winCondition !== "defeatAll") {
     normalized.winCondition = "scoreTarget";
+  }
+
+  if (control === "click" && normalized.loseCondition === "healthZero") {
     normalized.loseCondition = "timeOut";
-  } else if (control === "jump") {
-    normalized.winCondition = "surviveTime";
-    normalized.loseCondition = "healthZero";
-  } else if (control === "shoot") {
-    normalized.winCondition = "scoreTarget";
-    normalized.loseCondition = "healthZero";
-  } else {
-    normalized.winCondition = "scoreTarget";
+  }
+
+  if (control === "jump" && normalized.loseCondition === "timeOut") {
     normalized.loseCondition = "healthZero";
   }
 

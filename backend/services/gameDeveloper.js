@@ -11,6 +11,7 @@ const {
 
 const tasks = new Map();
 const generatedRoot = path.join(__dirname, "..", "..", "frontend", "generated");
+const DEVELOPMENT_TIMEOUT_MS = Number(process.env.DEVELOPMENT_TIMEOUT_MS) || 90000;
 
 const DEVELOPMENT_HUD_GUIDANCE = `
 UI HUD rules:
@@ -77,6 +78,9 @@ function createDevelopmentTask(prompt) {
     createdAt: Date.now()
   };
   tasks.set(id, task);
+  task.timeout = setTimeout(() => {
+    failTask(id, "开发任务超时，请稍后重试或换一个更简单的描述。");
+  }, DEVELOPMENT_TIMEOUT_MS);
   developTask(task).catch((error) => {
     failTask(id, error.message);
   });
@@ -112,6 +116,7 @@ async function developTask(task) {
   const current = tasks.get(task.id);
   if (!current) return;
   current.status = "completed";
+  if (current.timeout) clearTimeout(current.timeout);
   current.progress = 100;
   current.stage = "开发完成";
   current.entry = `/generated/${task.id}/index.html`;
@@ -171,6 +176,7 @@ async function writeGeneratedFiles(taskId, files) {
 function failTask(id, reason) {
   const current = tasks.get(id);
   if (!current || current.status !== "developing") return;
+  if (current.timeout) clearTimeout(current.timeout);
   current.status = "failed";
   current.progress = 100;
   current.stage = "开发失败，正在加载默认小游戏";

@@ -37,6 +37,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': 'http://localhost:3000',
+      '/assets': 'http://localhost:3000',
       '/modules': 'http://localhost:3000',
       '/generated': 'http://localhost:3000',
     },

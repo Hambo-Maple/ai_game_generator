@@ -1,8 +1,69 @@
 import { gameState } from "./state.js";
 
+const SPRITE_SHEET_SRC = "/assets/sprites/game-sprites-key.png";
+const SPRITE_GRID = 4;
+const SPRITES = {
+  cat: [0, 0],
+  knight: [1, 0],
+  robot: [2, 0],
+  ninja: [3, 0],
+  dog: [0, 1],
+  bird: [1, 1],
+  explorer: [2, 1],
+  astronaut: [3, 1],
+  meteor: [0, 2],
+  bee: [1, 2],
+  dart: [2, 2],
+  log: [3, 2],
+  coin: [0, 3],
+  star: [1, 3],
+  gem: [2, 3],
+  candy: [3, 3]
+};
+
+const spriteState = {
+  image: null,
+  loaded: false,
+  attempted: false
+};
+
+function ensureSpriteSheet() {
+  if (spriteState.attempted || typeof Image === "undefined") return;
+  spriteState.attempted = true;
+  const image = new Image();
+  image.onload = () => {
+    spriteState.image = removeGreenBackground(image);
+    spriteState.loaded = true;
+  };
+  image.onerror = () => {
+    spriteState.loaded = false;
+  };
+  image.src = SPRITE_SHEET_SRC;
+}
+
+function removeGreenBackground(image) {
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(image, 0, 0);
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < data.data.length; i += 4) {
+    const r = data.data[i];
+    const g = data.data[i + 1];
+    const b = data.data[i + 2];
+    if (g > 120 && g > r * 1.45 && g > b * 1.45) {
+      data.data[i + 3] = 0;
+    }
+  }
+  ctx.putImageData(data, 0, 0);
+  return canvas;
+}
+
 export function renderGame() {
   const { ctx, canvas, currentSpec } = gameState;
   if (!ctx || !canvas || !currentSpec) return;
+  ensureSpriteSheet();
 
   drawBackground(ctx, canvas, currentSpec.scene);
   drawObjects(ctx);
@@ -182,6 +243,9 @@ function drawTexture(ctx, canvas, theme) {
 
 function drawSprite(ctx, entity, x, y, width, height) {
   const key = `${entity.name || ""}${entity.emoji || ""}`.toLowerCase();
+  const spriteName = getSpriteName(key, entity);
+  if (drawSheetSprite(ctx, spriteName, x, y, width, height)) return;
+
   const cx = x + width / 2;
   const cy = y + height / 2;
   const size = Math.min(width, height);
@@ -209,6 +273,53 @@ function drawSprite(ctx, entity, x, y, width, height) {
   else drawDefaultSprite(ctx, entity, cx, cy, size);
 
   ctx.restore();
+}
+
+function getSpriteName(key, entity) {
+  if (key.includes("小猫") || key.includes("猫") || key.includes("🐱")) return "cat";
+  if (key.includes("骑士") || key.includes("勇士")) return "knight";
+  if (key.includes("小狗") || key.includes("狗") || key.includes("🐶")) return "dog";
+  if (key.includes("小鸟") || key.includes("鸟") || key.includes("🐦")) return "bird";
+  if (key.includes("忍者") || key.includes("🥷")) return "ninja";
+  if (key.includes("机器人") || key.includes("🤖")) return "robot";
+  if (key.includes("宇航") || key.includes("太空人") || key.includes("🧑‍🚀")) return "astronaut";
+  if (key.includes("探险") || key.includes("冒险者")) return "explorer";
+  if (key.includes("陨石") || key.includes("☄")) return "meteor";
+  if (key.includes("星星") || key.includes("⭐")) return "star";
+  if (key.includes("宝石") || key.includes("💎")) return "gem";
+  if (key.includes("糖果") || key.includes("🍬")) return "candy";
+  if (key.includes("飞镖") || key.includes("🗡")) return "dart";
+  if (key.includes("蜜蜂") || key.includes("🐝")) return "bee";
+  if (key.includes("木桩") || key.includes("🪵")) return "log";
+  if (key.includes("金币") || key.includes("硬币") || key.includes("coin")) return "coin";
+  if (entity.type === "reward" || entity.effect === "score") return "star";
+  return null;
+}
+
+function drawSheetSprite(ctx, name, x, y, width, height) {
+  if (!name || !spriteState.loaded || !spriteState.image || !SPRITES[name]) return false;
+  const [col, row] = SPRITES[name];
+  const cellW = spriteState.image.width / SPRITE_GRID;
+  const cellH = spriteState.image.height / SPRITE_GRID;
+  const pad = Math.min(cellW, cellH) * 0.05;
+  const drawSize = Math.max(width, height) * 1.45;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.38)";
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 6;
+  ctx.drawImage(
+    spriteState.image,
+    col * cellW + pad,
+    row * cellH + pad,
+    cellW - pad * 2,
+    cellH - pad * 2,
+    x + width / 2 - drawSize / 2,
+    y + height / 2 - drawSize / 2,
+    drawSize,
+    drawSize
+  );
+  ctx.restore();
+  return true;
 }
 
 function drawCat(ctx, cx, cy, s) {

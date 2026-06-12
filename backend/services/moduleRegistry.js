@@ -4,6 +4,12 @@ const gameModules = {
     name: "五子棋",
     entry: "/modules/gomoku/index.html",
     keywords: ["五子棋", "连珠", "黑白棋子", "gomoku"]
+  },
+  tetris: {
+    id: "tetris",
+    name: "俄罗斯方块",
+    entry: "/modules/tetris/index.html",
+    keywords: ["俄罗斯方块", "方块", "tetris", "消行"]
   }
 };
 

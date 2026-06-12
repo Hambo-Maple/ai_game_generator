@@ -16,9 +16,80 @@ objects.effect: score | damage | win | none
 rules.winCondition: scoreTarget | surviveTime | collectAll | defeatAll
 rules.loseCondition: healthZero | timeOut | collision
 difficulty.name: easy | normal | hard
+必须根据用户输入调整数值规则：
+- 如果用户提到血量、生命、几条命，设置 player.health。
+- 如果用户提到限时、倒计时、几秒内，设置 rules.timeLimit。
+- 如果用户提到达到多少分、收集多少分、击败目标，设置 rules.scoreTarget 和合适的 rules.winCondition。
+- 如果用户提到某个物体得多少分，设置该 object.points。
+- 不同物体可以有不同 points，例如金币 5 分、宝石 20 分、怪物 15 分。
 视觉风格要求：
 scene.backgroundColor 和 scene.groundColor 应适合主题。
 对象名称和 emoji 要有区分度，便于前端绘制可辨识素材。`;
+
+function parseFirstNumber(text, patterns) {
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return Number(match[1]);
+  }
+  return null;
+}
+
+function applyPromptTuning(spec, prompt) {
+  const value = String(prompt || "");
+  const health = parseFirstNumber(value, [
+    /(?:血量|生命值|生命|血)\s*(?:为|是|:|：)?\s*(\d+)/,
+    /(\d+)\s*(?:点血|条命|生命|血量)/
+  ]);
+  const timeLimit = parseFirstNumber(value, [
+    /(?:时间|限时|倒计时)\s*(?:为|是|:|：)?\s*(\d+)\s*(?:秒|s)?/i,
+    /(\d+)\s*(?:秒|s)\s*(?:内|时间|倒计时|限时)?/i
+  ]);
+  const scoreTarget = parseFirstNumber(value, [
+    /(?:目标分|目标分数|获胜分数|胜利分数|达到)\s*(?:为|是|:|：)?\s*(\d+)/,
+    /(?:得|拿|获得|收集|达到)\s*(\d+)\s*(?:分|金币|星星|宝石|糖果)/
+  ]);
+
+  if (health !== null) spec.player.health = health;
+  if (timeLimit !== null) spec.rules.timeLimit = timeLimit;
+  if (scoreTarget !== null) spec.rules.scoreTarget = scoreTarget;
+
+  if (/(坚持|存活|生存|撑过|躲避.*秒|限时.*不死)/.test(value)) {
+    spec.rules.winCondition = "surviveTime";
+  } else if (/(消灭|击败|打败|射杀|清除)/.test(value)) {
+    spec.rules.winCondition = "defeatAll";
+  } else if (/(收集齐|全部收集|集齐)/.test(value)) {
+    spec.rules.winCondition = "collectAll";
+  } else if (/(达到|获得|收集|拿到|得分|分数)/.test(value)) {
+    spec.rules.winCondition = "scoreTarget";
+  }
+
+  if (/(超时|时间结束|倒计时结束)/.test(value)) {
+    spec.rules.loseCondition = "timeOut";
+  } else if (/(碰到|撞到|被击中|被抓到)/.test(value)) {
+    spec.rules.loseCondition = "collision";
+  } else if (/(没血|生命为0|血量为0|死亡)/.test(value)) {
+    spec.rules.loseCondition = "healthZero";
+  }
+
+  spec.objects = spec.objects.map((object) => {
+    const escapedName = object.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const explicitPoints = parseFirstNumber(value, [
+      new RegExp(`${escapedName}[^\\d，。；,;]{0,12}(?:加|得|获得|给|值)\\s*(\\d+)\\s*分?`),
+      new RegExp(`${escapedName}[^\\d，。；,;]{0,12}(\\d+)\\s*分`),
+      new RegExp(`(?:加|得|获得|给|值)\\s*(\\d+)\\s*分?[^\\d，。；,;]{0,12}${escapedName}`)
+    ]);
+    const genericScorePoints = object.effect === "score"
+      ? parseFirstNumber(value, [
+        /(?:金币|星星|宝石|糖果|奖励|目标|怪物|地鼠)[^\d，。；,;]{0,12}(\d+)\s*分/,
+        /(?:每个|每只|每颗|每次)[^\d，。；,;]{0,12}(\d+)\s*分/
+      ])
+      : null;
+    const points = explicitPoints ?? genericScorePoints;
+    return points === null ? object : { ...object, points };
+  });
+
+  return spec;
+}
 
 function createHeuristicSpec(prompt) {
   const value = String(prompt || "");
@@ -109,7 +180,7 @@ function createHeuristicSpec(prompt) {
     spec.objects[1].emoji = value.includes("宝石") ? "💎" : value.includes("糖果") ? "🍬" : "⭐";
   }
 
-  return validateAndNormalizeGameSpec(spec);
+  return validateAndNormalizeGameSpec(applyPromptTuning(spec, prompt));
 }
 
 async function generateGameSpec(prompt, classification = "supported") {

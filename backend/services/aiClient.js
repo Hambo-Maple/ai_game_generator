@@ -2,10 +2,14 @@ async function callAi(messages) {
   const apiKey = process.env.AI_API_KEY;
   const baseUrl = process.env.AI_BASE_URL || "https://api.openai.com/v1";
   const model = process.env.AI_MODEL || "gpt-4.1-mini";
+  const timeoutMs = Number(process.env.AI_TIMEOUT_MS) || 60000;
 
   if (!apiKey || apiKey === "your_api_key_here") {
     throw new Error("AI_API_KEY is not configured");
   }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
@@ -13,12 +17,13 @@ async function callAi(messages) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`
     },
+    signal: controller.signal,
     body: JSON.stringify({
       model,
       messages,
       temperature: 0.7
     })
-  });
+  }).finally(() => clearTimeout(timeout));
 
   if (!response.ok) {
     throw new Error(`AI request failed with status ${response.status}`);

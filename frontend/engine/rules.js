@@ -56,6 +56,11 @@ export function checkWinLose(endGame) {
     return;
   }
 
+  if (rules.winCondition === "collectAll" && gameState.score >= rules.scoreTarget) {
+    endGame("win");
+    return;
+  }
+
   if (gameState.timeLeft <= 0) {
     if (rules.winCondition === "surviveTime") {
       endGame("win");
@@ -71,6 +76,10 @@ function applyObjectEffect(object) {
   if (object.effect === "score") {
     gameState.score += object.points || 10;
   } else if (object.effect === "damage") {
+    if (gameState.currentSpec.rules.loseCondition === "collision") {
+      gameState.health = 0;
+      return;
+    }
     gameState.health -= object.damage || 1;
   } else if (object.effect === "win") {
     gameState.score = gameState.currentSpec.rules.scoreTarget;

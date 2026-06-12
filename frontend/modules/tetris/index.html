@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>俄罗斯方块</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas" width="360" height="640" aria-label="俄罗斯方块游戏画面"></canvas>
+    <div id="hud">
+      <div id="score"><span>★</span> 0</div>
+      <div id="lines"><span>🧱</span> 0</div>
+      <div id="level"><span>⚡</span> 1</div>
+      <div id="status">等待开始</div>
+    </div>
+  </div>
+  <script src="./game.js"></script>
+</body>
+</html>
